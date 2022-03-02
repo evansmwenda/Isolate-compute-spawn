@@ -1,4 +1,4 @@
-# isolate_spawn
+# Isolate-compute-spawn
 
 Multithreading is process of execution code parallel in 
 different thread so that main thread won’t have the problem
