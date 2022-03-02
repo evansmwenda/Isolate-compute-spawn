@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -24,7 +26,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
-
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -42,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            SizedBox(height:50),
+            SizedBox(height: 50),
             Expanded(
               flex: 3,
               child: Column(
@@ -50,7 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   CircularProgressIndicator(),
                   ElevatedButton(
                     child: Text("Without Isolate"),
-                    onPressed: () async{
+                    onPressed: () async {
                       final sum = computationallyExpensiveTask(1000000000);
                       print(sum);
                     },
@@ -58,7 +59,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
             ),
-            Container(color: Colors.green,height: 40,child: SizedBox(width: double.infinity,child: Text("Evans"),),),
+            Container(
+              color: Colors.green,
+              height: 40,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text("Evans"),
+              ),
+            ),
             Expanded(
               flex: 3,
               child: Column(
@@ -66,16 +74,53 @@ class _MyHomePageState extends State<MyHomePage> {
                   CircularProgressIndicator(),
                   ElevatedButton(
                     child: Text("With Isolate- Compute"),
-                    onPressed: () async{
-                      final sum =  await compute(computationallyExpensiveTask,1000000000);
+                    onPressed: () async {
+                      final sum = await compute(
+                          computationallyExpensiveTask, 1000000000);
                       print(sum);
                     },
                   ),
                 ],
               ),
             ),
-            Container(color: Colors.red,height: 40,child: SizedBox(width: double.infinity,child: Text("Mwenda"),),),
+            Container(
+              color: Colors.red,
+              height: 40,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text("Mwenda"),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Column(
+                children: [
+                  CircularProgressIndicator(),
+                  ElevatedButton(
+                      child: Text("With Isolate- Spawn"),
+                      onPressed: () async {
+                        //ReceivePort is to listen for the isolate to finish job
+                        final receivePort = ReceivePort();
+                        // here we are passing method name and sendPort instance from ReceivePort as listener
+                        await Isolate.spawn(computationallyExpensiveTaskSpawn,
+                            receivePort.sendPort);
 
+                        //It will listen for isolate function to finish
+                        receivePort.listen((sum) {
+                          print(sum);
+                        });
+                      }),
+                ],
+              ),
+            ),
+            Container(
+              color: Colors.blueAccent,
+              height: 40,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text("Mwenda"),
+              ),
+            ),
           ],
         ),
       ),
@@ -83,11 +128,23 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-int computationallyExpensiveTask(int value){
+int computationallyExpensiveTask(int value) {
   var sum = 0;
-  for(var i=0;i<=value;i++){
-    sum +=i;
+  for (var i = 0; i <= value; i++) {
+    sum += i;
   }
   print("finished task");
   return sum;
+}
+
+// this function should be either top level(outside class) or static method
+void computationallyExpensiveTaskSpawn(SendPort sendPort) {
+  print("heavy work started");
+  var sum = 0;
+  for (var i = 0; i <= 1000000000; i++) {
+    sum += i;
+  }
+  print("heavy work finished");
+  //Remember there is no return, we are sending sum to listener defined defore.
+  sendPort.send(sum);
 }
